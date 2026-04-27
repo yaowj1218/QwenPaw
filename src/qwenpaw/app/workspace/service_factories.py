@@ -168,3 +168,26 @@ async def create_mcp_config_watcher(ws: "Workspace", _):
     ws._service_manager.services["mcp_config_watcher"] = watcher
     return watcher
     # pylint: enable=protected-access
+
+
+async def create_enterprise_context_service(ws: "Workspace", _):
+    """Create enterprise context refresh manager when enabled."""
+    # pylint: disable=protected-access
+    context_config = getattr(ws._config, "context", None)
+    if not context_config or not context_config.enabled:
+        return None
+
+    from qwenpaw.config.timezone import normalize_tz
+    from qwenpaw.config.utils import load_config
+    from qwenpaw.enterprise_context import EnterpriseContextManager
+
+    manager = EnterpriseContextManager(
+        workspace_dir=ws.workspace_dir,
+        agent_id=ws.agent_id,
+        config=context_config,
+        timezone_name=normalize_tz(load_config().user_timezone or "UTC")
+        or "UTC",
+    )
+    ws._service_manager.services["enterprise_context_manager"] = manager
+    return manager
+    # pylint: enable=protected-access

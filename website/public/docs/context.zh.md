@@ -33,6 +33,58 @@ flowchart LR
 - **保持连贯**：`compact_summary` 保留结构化摘要 + 对话路径引导，确保 Agent 不失去上下文
 - **自动触发**：无需手动干预，也可用 `/compact` 主动触发
 
+## 企业上下文（Enterprise Context）
+
+如果你在公司内部使用 QwenPaw，可以把内部接口返回的个人信息、组织约定、系统背景等加工成 Markdown，再像 `SOUL.md`、`MEMORY.md` 一样注入 Agent 的系统提示词。
+
+企业上下文分为两类，统称为 `context`：
+
+| 类型 | 说明 | 生成文件 |
+| ---- | ---- | -------- |
+| `user_info` | 当前用户、岗位、团队、权限、偏好等个性化信息 | `context/user_info.md` |
+| `common_knowledge` | 公司通用知识、研发约定、系统地图、术语表等公共信息 | `context/common_knowledge.md` |
+
+启用后，QwenPaw 会生成工作区根目录下的 `CONTEXT.md`，并在构建 system prompt 时自动加载它。刷新可以发生在 Agent 启动时，也可以配置为定时刷新。
+
+### agent.json 配置示例
+
+```json
+{
+  "context": {
+    "enabled": true,
+    "include_in_prompt": true,
+    "refresh_on_start": true,
+    "refresh_every": "30m",
+    "output_dir": "context",
+    "prompt_file": "CONTEXT.md",
+    "sources": [
+      {
+        "name": "员工信息",
+        "kind": "user_info",
+        "url": "https://internal.example.com/api/user-info",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer ${TOKEN}"
+        },
+        "json_path": "data"
+      },
+      {
+        "name": "研发约定",
+        "kind": "common_knowledge",
+        "url": "https://internal.example.com/api/common-knowledge",
+        "method": "POST",
+        "body": {
+          "scope": "engineering"
+        },
+        "json_path": "data.items"
+      }
+    ]
+  }
+}
+```
+
+`refresh_every` 支持 `30m`、`2h` 这类间隔，也支持 5 段 cron 表达式。接口返回 JSON 时可以用 `json_path` 提取字段；返回文本时会直接写入 Markdown。
+
 ## 上下文结构
 
 ### 内存中的数据结构

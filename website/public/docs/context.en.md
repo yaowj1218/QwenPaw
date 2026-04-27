@@ -33,6 +33,58 @@ flowchart LR
 - **Context continuity**: `compact_summary` retains a structured summary + dialog path guide so the Agent never loses context
 - **Automatic**: Triggers without manual intervention; `/compact` can also trigger it manually
 
+## Enterprise Context
+
+For internal company deployments, QwenPaw can fetch user-specific and shared company knowledge from internal APIs, render it as Markdown, and load it into the Agent's system prompt just like `SOUL.md` or `MEMORY.md`.
+
+Enterprise context has two sections:
+
+| Type | Description | Generated file |
+| ---- | ----------- | -------------- |
+| `user_info` | Current user, role, team, permissions, preferences, and other personalized information | `context/user_info.md` |
+| `common_knowledge` | Shared company knowledge, engineering conventions, system maps, glossaries, and similar background | `context/common_knowledge.md` |
+
+When enabled, QwenPaw writes `CONTEXT.md` in the workspace root and automatically loads it into the system prompt. It can refresh once on Agent startup and/or on a schedule.
+
+### agent.json Example
+
+```json
+{
+  "context": {
+    "enabled": true,
+    "include_in_prompt": true,
+    "refresh_on_start": true,
+    "refresh_every": "30m",
+    "output_dir": "context",
+    "prompt_file": "CONTEXT.md",
+    "sources": [
+      {
+        "name": "Employee Profile",
+        "kind": "user_info",
+        "url": "https://internal.example.com/api/user-info",
+        "method": "GET",
+        "headers": {
+          "Authorization": "Bearer ${TOKEN}"
+        },
+        "json_path": "data"
+      },
+      {
+        "name": "Engineering Conventions",
+        "kind": "common_knowledge",
+        "url": "https://internal.example.com/api/common-knowledge",
+        "method": "POST",
+        "body": {
+          "scope": "engineering"
+        },
+        "json_path": "data.items"
+      }
+    ]
+  }
+}
+```
+
+`refresh_every` supports intervals such as `30m` and `2h`, or a 5-field cron expression. Use `json_path` to extract fields from JSON responses; plain text responses are written directly as Markdown.
+
 ## Context Structure
 
 ### In-Memory Data Structure

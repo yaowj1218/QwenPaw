@@ -3,10 +3,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from agentscope.message import TextBlock
-from agentscope_runtime.engine.schemas.tool import ToolResponse
+from agentscope.tool import ToolResponse
 
 from .manager import KnowledgeBaseManager
 from .models import KnowledgeQuery

@@ -915,6 +915,63 @@ class PlanConfig(BaseModel):
     )
 
 
+class ContextSourceConfig(BaseModel):
+    """One upstream source for enterprise context markdown generation."""
+
+    name: str = Field(default="", description="Human-readable source name")
+    kind: Literal["user_info", "common_knowledge"] = Field(
+        default="common_knowledge",
+        description="Context section this source contributes to",
+    )
+    enabled: bool = Field(default=True)
+    url: str = Field(default="", description="HTTP endpoint to fetch")
+    method: Literal["GET", "POST"] = Field(default="GET")
+    headers: Dict[str, str] = Field(default_factory=dict)
+    params: Dict[str, Any] = Field(default_factory=dict)
+    body: Dict[str, Any] = Field(default_factory=dict)
+    json_path: str = Field(
+        default="",
+        description=(
+            "Optional dot path to extract from a JSON response, "
+            "for example data.items"
+        ),
+    )
+    timeout_seconds: float = Field(default=15.0, gt=0)
+
+
+class ContextConfig(BaseModel):
+    """Enterprise context configuration (stored in agent.json)."""
+
+    enabled: bool = Field(
+        default=False,
+        description="Whether enterprise context refresh/loading is enabled",
+    )
+    include_in_prompt: bool = Field(
+        default=True,
+        description="Whether generated context markdown is injected in prompt",
+    )
+    refresh_on_start: bool = Field(
+        default=True,
+        description="Refresh context once when the agent workspace starts",
+    )
+    refresh_every: str = Field(
+        default="",
+        description=(
+            "Optional refresh schedule. Supports heartbeat-style intervals "
+            "such as 30m/2h or a 5-field cron expression."
+        ),
+    )
+    output_dir: str = Field(
+        default="context",
+        description="Workspace-relative directory for generated context files",
+    )
+    prompt_file: str = Field(
+        default="CONTEXT.md",
+        description="Workspace-relative markdown file injected into prompt",
+    )
+    sources: List[ContextSourceConfig] = Field(default_factory=list)
+
+
 class AgentProfileConfig(BaseModel):
     """Complete Agent Profile configuration (stored in workspace/agent.json).
 
@@ -995,6 +1052,10 @@ class AgentProfileConfig(BaseModel):
     plan: PlanConfig = Field(
         default_factory=PlanConfig,
         description="Plan mode configuration for this agent",
+    )
+    context: ContextConfig = Field(
+        default_factory=ContextConfig,
+        description="Enterprise context refresh and prompt loading",
     )
 
 

@@ -317,6 +317,38 @@ def build_system_prompt_from_working_dir(
         )
         prompt = identity_header + prompt
 
+    # Enterprise context is generated from configured internal sources into a
+    # markdown file. Load it independently from system_prompt_files so enabling
+    # the feature does not require mutating existing prompt file lists.
+    if agent_id:
+        try:
+            from ..config.config import load_agent_config
+
+            agent_config = load_agent_config(agent_id)
+            context_config = getattr(agent_config, "context", None)
+            context_enabled = (
+                context_config
+                and context_config.enabled
+                and context_config.include_in_prompt
+            )
+            if context_enabled:
+                prompt_file = context_config.prompt_file
+                already_loaded = prompt_file in (enabled_files or [])
+                context_path = Path(working_dir) / prompt_file
+                if not already_loaded and context_path.exists():
+                    content = read_text_file_with_encoding_fallback(
+                        context_path,
+                    ).strip()
+                    if content:
+                        prompt = (
+                            prompt
+                            + "\n\n"
+                            + f"# {prompt_file}\n\n"
+                            + content
+                        )
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning("Failed to load enterprise context: %s", e)
+
     return prompt
 
 

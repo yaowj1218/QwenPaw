@@ -24,6 +24,7 @@ from .service_factories import (
     create_channel_service,
     create_agent_config_watcher,
     create_mcp_config_watcher,
+    create_enterprise_context_service,
 )
 from ..runner import AgentRunner
 from ..runner.task_tracker import TaskTracker
@@ -116,6 +117,11 @@ class Workspace:
     def cron_manager(self):
         """Get cron manager instance from ServiceManager."""
         return self._service_manager.services.get("cron_manager")
+
+    @property
+    def enterprise_context_manager(self):
+        """Get enterprise context manager instance from ServiceManager."""
+        return self._service_manager.services.get("enterprise_context_manager")
 
     # Non-service state
     @property
@@ -260,6 +266,20 @@ class Workspace:
                 reusable=True,
                 priority=20,
                 concurrent_init=True,
+            ),
+        )
+
+        # Priority 24: Enterprise context refresh before runner start, so
+        # initial system prompt can include freshly generated CONTEXT.md.
+        sm.register(
+            ServiceDescriptor(
+                name="enterprise_context_manager",
+                service_class=None,
+                post_init=create_enterprise_context_service,
+                start_method="start",
+                stop_method="close",
+                priority=24,
+                concurrent_init=False,
             ),
         )
 
