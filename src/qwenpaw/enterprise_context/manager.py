@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -184,19 +185,23 @@ class EnterpriseContextManager:
             return {}
 
         timeout = httpx.Timeout(source.timeout_seconds)
+        url = self._expand_value(source.url)
+        headers = self._expand_value(source.headers)
+        params = self._expand_value(source.params)
+        body = self._expand_value(source.body)
         async with httpx.AsyncClient(timeout=timeout) as client:
             if source.method == "POST":
                 response = await client.post(
-                    source.url,
-                    headers=source.headers,
-                    params=source.params,
-                    json=source.body or None,
+                    url,
+                    headers=headers,
+                    params=params,
+                    json=body or None,
                 )
             else:
                 response = await client.get(
-                    source.url,
-                    headers=source.headers,
-                    params=source.params,
+                    url,
+                    headers=headers,
+                    params=params,
                 )
             response.raise_for_status()
 
@@ -211,6 +216,16 @@ class EnterpriseContextManager:
 
         if source.json_path:
             value = self._extract_json_path(value, source.json_path)
+        return value
+
+    def _expand_value(self, value: Any) -> Any:
+        """Expand environment variables in source request values."""
+        if isinstance(value, str):
+            return os.path.expandvars(value)
+        if isinstance(value, dict):
+            return {k: self._expand_value(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [self._expand_value(v) for v in value]
         return value
 
     def _extract_json_path(self, value: Any, path: str) -> Any:

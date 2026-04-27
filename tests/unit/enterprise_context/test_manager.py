@@ -69,3 +69,28 @@ def test_json_path_extracts_nested_values(temp_workspace: Path) -> None:
     value = {"data": {"items": [{"name": "first"}, {"name": "second"}]}}
 
     assert manager._extract_json_path(value, "data.items.1.name") == "second"
+
+
+def test_source_kind_accepts_common_misspelling() -> None:
+    """The misspelled public term is normalized for compatibility."""
+
+    source = ContextSourceConfig(kind="common_knowledeg")
+
+    assert source.kind == "common_knowledge"
+
+
+def test_request_values_expand_environment(
+    temp_workspace: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Headers/body/params can reference environment variables."""
+
+    monkeypatch.setenv("QWENPAW_TEST_TOKEN", "secret")
+    manager = EnterpriseContextManager(
+        workspace_dir=temp_workspace,
+        agent_id="default",
+    )
+
+    assert manager._expand_value(
+        {"Authorization": "Bearer ${QWENPAW_TEST_TOKEN}"},
+    ) == {"Authorization": "Bearer secret"}

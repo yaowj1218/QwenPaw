@@ -938,6 +938,14 @@ class ContextSourceConfig(BaseModel):
     )
     timeout_seconds: float = Field(default=15.0, gt=0)
 
+    @field_validator("kind", mode="before")
+    @classmethod
+    def normalize_kind(cls, value: Any) -> Any:
+        """Accept the common misspelling without storing it."""
+        if value == "common_knowledeg":
+            return "common_knowledge"
+        return value
+
 
 class ContextConfig(BaseModel):
     """Enterprise context configuration (stored in agent.json)."""
