@@ -264,9 +264,11 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
     # Start token usage manager background tasks
     logger.debug("Starting TokenUsageManager background tasks...")
     from ..token_usage import get_token_usage_manager
+    from .user_info import start_user_info_sync_task
 
     token_usage_manager = get_token_usage_manager()
     token_usage_manager.start(flush_interval=10)
+    user_info_sync_task = start_user_info_sync_task(app)
 
     # Expose to endpoints (must be set before first request arrives)
     app.state.multi_agent_manager = multi_agent_manager
@@ -459,6 +461,11 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
             _bg_task.cancel()
             with suppress(asyncio.CancelledError):
                 await _bg_task
+
+        if not user_info_sync_task.done():
+            user_info_sync_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await user_info_sync_task
 
         # ==================== Execute Shutdown Hooks ====================
         plugin_registry = getattr(app.state, "plugin_registry", None)

@@ -89,3 +89,28 @@ def test_initialize_agent_workspace_applies_md_template_with_language(
     )
 
     assert recorded_calls == [("ru", tmp_path, "qa")]
+
+
+def test_initialize_agent_workspace_adds_user_info_md_for_zh(
+    monkeypatch,
+    tmp_path,
+):
+    """Chinese workspaces should receive the USER_INFO.md starter file."""
+    import qwenpaw.config as config_module
+
+    monkeypatch.setattr(
+        config_module,
+        "load_config",
+        lambda: _stub_global_config("zh"),
+    )
+    monkeypatch.setattr(
+        agents_router,
+        "_install_initial_skills",
+        lambda workspace_dir, skill_names: None,
+    )
+
+    agents_router._initialize_agent_workspace(tmp_path)
+
+    user_info = tmp_path / "USER_INFO.md"
+    assert user_info.exists()
+    assert "user-info:auto:start" in user_info.read_text(encoding="utf-8")

@@ -4,6 +4,10 @@ read_when:
   - 需要了解用户身份、偏好或长期背景
 ---
 
+<!-- user-info:auto:start -->
+<!-- 后台会从 /api/user-info 自动同步这个区块。 -->
+<!-- user-info:auto:end -->
+
 ## 基本信息
 
 - **姓名：**

@@ -344,6 +344,15 @@ def has_registered_users() -> bool:
     return bool(data.get("user"))
 
 
+def get_registered_username() -> str:
+    """Return the registered username without exposing credentials."""
+    data = _load_auth_data()
+    user = data.get("user")
+    if not isinstance(user, dict):
+        return ""
+    return str(user.get("username") or "")
+
+
 # ---------------------------------------------------------------------------
 # Registration (single-user)
 # ---------------------------------------------------------------------------
