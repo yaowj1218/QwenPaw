@@ -30,6 +30,7 @@ from ..runner.task_tracker import TaskTracker
 from ..mcp import MCPClientManager
 from ..crons.manager import CronManager
 from ..crons.repo.json_repo import JsonJobRepository
+from ...knowledge import KnowledgeBaseManager
 from ...config.config import load_agent_config
 
 logger = logging.getLogger(__name__)
@@ -100,6 +101,11 @@ class Workspace:
     def chat_manager(self):
         """Get chat manager instance from ServiceManager."""
         return self._service_manager.services.get("chat_manager")
+
+    @property
+    def knowledge_manager(self):
+        """Get knowledge manager instance from ServiceManager."""
+        return self._service_manager.services.get("knowledge_manager")
 
     @property
     def channel_manager(self):
@@ -184,6 +190,26 @@ class Workspace:
                     ws._service_manager.services["runner"],
                     "memory_manager",
                     mm,
+                ),
+                start_method="start",
+                stop_method="close",
+                reusable=True,
+                priority=20,
+                concurrent_init=True,
+            ),
+        )
+
+        sm.register(
+            ServiceDescriptor(
+                name="knowledge_manager",
+                service_class=lambda ws: KnowledgeBaseManager(
+                    workspace_dir=ws.workspace_dir,
+                ),
+                init_args=lambda ws: {},
+                post_init=lambda ws, km: setattr(
+                    ws._service_manager.services["runner"],
+                    "knowledge_manager",
+                    km,
                 ),
                 start_method="start",
                 stop_method="close",

@@ -38,6 +38,7 @@ from ...agents.utils.file_handling import (
 )
 from ...config.config import load_agent_config
 from ...constant import WORKING_DIR
+from ...knowledge.knowledge_search import KnowledgeSearchTool
 
 if TYPE_CHECKING:
     from ...agents.memory import BaseMemoryManager
@@ -122,6 +123,7 @@ class AgentRunner(Runner):
         self._workspace: Any = None  # Workspace instance for control commands
         self.memory_manager: BaseMemoryManager | None = None
         self.context_manager: BaseContextManager | None = None
+        self.knowledge_manager = None
         self._task_tracker = task_tracker  # Task tracker for background tasks
 
     def set_chat_manager(self, chat_manager):
@@ -461,6 +463,23 @@ class AgentRunner(Runner):
                     refresher + original,
                 )
 
+            # Knowledge context injection (workspace knowledge base)
+            if self.knowledge_manager is not None and query:
+                try:
+                    kb_prompt = self.knowledge_manager.build_knowledge_prompt(
+                        query_text=query,
+                        session_id=session_id,
+                        categories=None,
+                        limit=5,
+                    )
+                    if kb_prompt:
+                        self._rewrite_last_message_text(
+                            msgs,
+                            kb_prompt + "\n\n" + (query or ""),
+                        )
+                except Exception as exc:
+                    logger.warning("Knowledge prompt build failed: %s", exc)
+
             # --- Plan Mode ------------------------------------------
             plan_notebook = None
             plan_enabled = getattr(
@@ -557,6 +576,15 @@ class AgentRunner(Runner):
             )
             await agent.register_mcp_clients()
             agent.set_console_output_enabled(enabled=False)
+            if self.knowledge_manager is not None:
+                try:
+                    kb_tool = KnowledgeSearchTool(self.knowledge_manager)
+                    agent.toolkit.register_tool_function(
+                        kb_tool.knowledge_search,
+                        namesake_strategy="skip",
+                    )
+                except Exception as exc:
+                    logger.warning("Failed to register knowledge_search tool: %s", exc)
 
             logger.debug(
                 f"Agent Query msgs {msgs}",
