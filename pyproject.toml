@@ -144,3 +144,7 @@ show_missing = true
 
 [tool.coverage.html]
 directory = "htmlcov"
+
+[[index]]
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple/"
+default = true
