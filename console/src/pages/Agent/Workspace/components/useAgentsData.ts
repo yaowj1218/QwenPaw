@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { useAppMessage } from "../../../../hooks/useAppMessage";
 import { useTranslation } from "react-i18next";
 import api from "../../../../api";
-import type { MarkdownFile, DailyMemoryFile } from "../../../../api/types";
+import type {
+  MarkdownFile,
+  DailyMemoryFile,
+  CommonInfoFile,
+} from "../../../../api/types";
 import { workspaceApi } from "../../../../api/modules/workspace";
 import { useAgentStore } from "../../../../stores/agentStore";
 
@@ -12,6 +16,9 @@ const getParentDir = (filePath: string): string => {
   return match ? match[1] : filePath;
 };
 
+const isCommonInfoPath = (filePath: string): boolean =>
+  /(^|[/\\])common_info[/\\]/.test(filePath);
+
 export const useAgentsData = () => {
   const { t } = useTranslation();
   const { selectedAgent } = useAgentStore();
@@ -19,6 +26,8 @@ export const useAgentsData = () => {
   const [selectedFile, setSelectedFile] = useState<MarkdownFile | null>(null);
   const [dailyMemories, setDailyMemories] = useState<DailyMemoryFile[]>([]);
   const [expandedMemory, setExpandedMemory] = useState(false);
+  const [commonInfoFiles, setCommonInfoFiles] = useState<CommonInfoFile[]>([]);
+  const [expandedCommonInfo, setExpandedCommonInfo] = useState(false);
   const [fileContent, setFileContent] = useState("");
   const [originalContent, setOriginalContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,6 +44,7 @@ export const useAgentsData = () => {
       setFileContent("");
       setOriginalContent("");
       setExpandedMemory(false);
+      setExpandedCommonInfo(false);
 
       const enabled = await fetchEnabledFiles();
       const fileList = await workspaceApi.listFiles();
@@ -155,6 +165,16 @@ export const useAgentsData = () => {
     }
   };
 
+  const fetchCommonInfoFiles = async () => {
+    try {
+      const commonInfoList = await api.listCommonInfo();
+      setCommonInfoFiles(commonInfoList);
+    } catch (error) {
+      console.error("Failed to fetch common info files", error);
+      message.error("Failed to load common info list");
+    }
+  };
+
   const handleFileClick = async (file: MarkdownFile) => {
     if (file.filename === "MEMORY.md") {
       if (expandedMemory && selectedFile?.filename === "MEMORY.md") {
@@ -163,6 +183,16 @@ export const useAgentsData = () => {
       } else {
         setExpandedMemory(true);
         fetchDailyMemories();
+      }
+    }
+
+    if (file.filename === "COMMON_INFO.md") {
+      if (expandedCommonInfo && selectedFile?.filename === "COMMON_INFO.md") {
+        setExpandedCommonInfo(false);
+        return;
+      } else {
+        setExpandedCommonInfo(true);
+        fetchCommonInfoFiles();
       }
     }
 
@@ -202,11 +232,35 @@ export const useAgentsData = () => {
     }
   };
 
+  const handleCommonInfoClick = async (commonInfo: CommonInfoFile) => {
+    setSelectedFile({
+      filename: commonInfo.filename,
+      path: commonInfo.path,
+      size: commonInfo.size,
+      created_time: commonInfo.created_time,
+      modified_time: commonInfo.modified_time,
+      updated_at: commonInfo.updated_at,
+    });
+    setLoading(true);
+    try {
+      const data = await api.loadCommonInfo(commonInfo.filename);
+      setFileContent(data.content);
+      setOriginalContent(data.content);
+    } catch (error) {
+      console.error("Failed to load common info", error);
+      message.error("Failed to load common info");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedFile) return;
     setLoading(true);
     try {
-      if (selectedFile.filename.match(/^\d{4}-\d{2}-\d{2}\.md$/)) {
+      if (isCommonInfoPath(selectedFile.path)) {
+        await api.saveCommonInfo(selectedFile.filename, fileContent);
+      } else if (selectedFile.filename.match(/^\d{4}-\d{2}-\d{2}\.md$/)) {
         const date = selectedFile.filename.replace(".md", "");
         await api.saveDailyMemory(date, fileContent);
       } else {
@@ -214,7 +268,9 @@ export const useAgentsData = () => {
       }
       setOriginalContent(fileContent);
       message.success("Saved successfully");
-      if (selectedFile.filename.match(/^\d{4}-\d{2}-\d{2}\.md$/)) {
+      if (isCommonInfoPath(selectedFile.path)) {
+        fetchCommonInfoFiles();
+      } else if (selectedFile.filename.match(/^\d{4}-\d{2}-\d{2}\.md$/)) {
         fetchDailyMemories();
       } else {
         fetchFiles();
@@ -278,6 +334,8 @@ export const useAgentsData = () => {
     selectedFile,
     dailyMemories,
     expandedMemory,
+    commonInfoFiles,
+    expandedCommonInfo,
     fileContent,
     loading,
     workspacePath,
@@ -286,8 +344,10 @@ export const useAgentsData = () => {
     setFileContent,
     fetchFiles,
     fetchDailyMemories,
+    fetchCommonInfoFiles,
     handleFileClick,
     handleDailyMemoryClick,
+    handleCommonInfoClick,
     handleSave,
     handleReset,
     handleToggleFileEnabled,

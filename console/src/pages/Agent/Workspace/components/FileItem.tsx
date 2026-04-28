@@ -7,7 +7,11 @@ import {
 } from "@ant-design/icons";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { MarkdownFile, DailyMemoryFile } from "../../../../api/types";
+import type {
+  MarkdownFile,
+  DailyMemoryFile,
+  CommonInfoFile,
+} from "../../../../api/types";
 import prettyBytes from "pretty-bytes";
 import { formatTimeAgo } from "./utils";
 import { useTranslation } from "react-i18next";
@@ -18,9 +22,12 @@ interface FileItemProps {
   selectedFile: MarkdownFile | null;
   expandedMemory: boolean;
   dailyMemories: DailyMemoryFile[];
+  expandedCommonInfo: boolean;
+  commonInfoFiles: CommonInfoFile[];
   enabled?: boolean;
   onFileClick: (file: MarkdownFile) => void;
   onDailyMemoryClick: (daily: DailyMemoryFile) => void;
+  onCommonInfoClick: (commonInfo: CommonInfoFile) => void;
   onToggleEnabled: (filename: string) => void;
 }
 
@@ -29,14 +36,18 @@ export const FileItem: React.FC<FileItemProps> = ({
   selectedFile,
   expandedMemory,
   dailyMemories,
+  expandedCommonInfo,
+  commonInfoFiles,
   enabled = false,
   onFileClick,
   onDailyMemoryClick,
+  onCommonInfoClick,
   onToggleEnabled,
 }) => {
   const { t } = useTranslation();
   const isSelected = selectedFile?.filename === file.filename;
   const isMemoryFile = file.filename === "MEMORY.md";
+  const isCommonInfoFile = file.filename === "COMMON_INFO.md";
 
   const {
     attributes,
@@ -104,9 +115,9 @@ export const FileItem: React.FC<FileItemProps> = ({
                 onClick={handleToggleClick}
               />
             </Tooltip>
-            {isMemoryFile && (
+            {(isMemoryFile || isCommonInfoFile) && (
               <span className={styles.expandIcon}>
-                {expandedMemory ? (
+                {(isMemoryFile ? expandedMemory : expandedCommonInfo) ? (
                   <CaretDownOutlined />
                 ) : (
                   <CaretRightOutlined />
@@ -133,6 +144,31 @@ export const FileItem: React.FC<FileItemProps> = ({
                 <div className={styles.dailyMemoryName}>{daily.date}.md</div>
                 <div className={styles.dailyMemoryMeta}>
                   {prettyBytes(daily.size)} · {formatTimeAgo(daily.updated_at)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {isCommonInfoFile && expandedCommonInfo && (
+        <div className={styles.dailyMemoryList}>
+          {commonInfoFiles.map((commonInfo) => {
+            const isCommonInfoSelected = selectedFile?.path === commonInfo.path;
+            return (
+              <div
+                key={commonInfo.filename}
+                onClick={() => onCommonInfoClick(commonInfo)}
+                className={`${styles.dailyMemoryItem} ${
+                  isCommonInfoSelected ? styles.selected : ""
+                }`}
+              >
+                <div className={styles.dailyMemoryName}>
+                  {commonInfo.filename}
+                </div>
+                <div className={styles.dailyMemoryMeta}>
+                  {prettyBytes(commonInfo.size)} ·{" "}
+                  {formatTimeAgo(commonInfo.updated_at)}
                 </div>
               </div>
             );

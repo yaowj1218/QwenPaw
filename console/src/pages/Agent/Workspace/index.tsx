@@ -16,6 +16,8 @@ export default function WorkspacePage() {
     selectedFile,
     dailyMemories,
     expandedMemory,
+    commonInfoFiles,
+    expandedCommonInfo,
     fileContent,
     loading,
     workspacePath,
@@ -25,6 +27,7 @@ export default function WorkspacePage() {
     fetchFiles,
     handleFileClick,
     handleDailyMemoryClick,
+    handleCommonInfoClick,
     handleSave,
     handleReset,
     handleToggleFileEnabled,
@@ -161,11 +164,14 @@ export default function WorkspacePage() {
           selectedFile={selectedFile}
           dailyMemories={dailyMemories}
           expandedMemory={expandedMemory}
+          commonInfoFiles={commonInfoFiles}
+          expandedCommonInfo={expandedCommonInfo}
           workspacePath={workspacePath}
           enabledFiles={enabledFiles}
           onRefresh={fetchFiles}
           onFileClick={handleFileClick}
           onDailyMemoryClick={handleDailyMemoryClick}
+          onCommonInfoClick={handleCommonInfoClick}
           onToggleEnabled={handleToggleFileEnabled}
           onReorder={handleReorderFiles}
         />

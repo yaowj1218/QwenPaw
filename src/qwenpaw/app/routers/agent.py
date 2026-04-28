@@ -185,6 +185,80 @@ async def write_memory_file(
 
 
 @router.get(
+    "/common-info",
+    response_model=list[MdFileInfo],
+    summary="List common-info files",
+    description="List all common-info files (uses active agent)",
+)
+async def list_common_info_files(
+    request: Request,
+) -> list[MdFileInfo]:
+    """List common-info directory markdown files."""
+    try:
+        workspace = await get_agent_for_request(request)
+        workspace_manager = AgentMdManager(
+            str(workspace.workspace_dir),
+            agent_id=workspace.agent_id,
+        )
+        files = [
+            MdFileInfo.model_validate(file)
+            for file in workspace_manager.list_common_info_mds()
+        ]
+        return files
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.get(
+    "/common-info/{md_name}",
+    response_model=MdFileContent,
+    summary="Read a common-info file",
+    description="Read a common-info markdown file (uses active agent)",
+)
+async def read_common_info_file(
+    md_name: str,
+    request: Request,
+) -> MdFileContent:
+    """Read a common-info directory markdown file."""
+    try:
+        workspace = await get_agent_for_request(request)
+        workspace_manager = AgentMdManager(
+            str(workspace.workspace_dir),
+            agent_id=workspace.agent_id,
+        )
+        content = workspace_manager.read_common_info_md(md_name)
+        return MdFileContent(content=content)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.put(
+    "/common-info/{md_name}",
+    response_model=dict,
+    summary="Write a common-info file",
+    description="Create or update a common-info file (uses active agent)",
+)
+async def write_common_info_file(
+    md_name: str,
+    body: MdFileContent,
+    request: Request,
+) -> dict:
+    """Write a common-info directory markdown file."""
+    try:
+        workspace = await get_agent_for_request(request)
+        workspace_manager = AgentMdManager(
+            str(workspace.workspace_dir),
+            agent_id=workspace.agent_id,
+        )
+        workspace_manager.write_common_info_md(md_name, body.content)
+        return {"written": True}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.get(
     "/language",
     summary="Get agent language",
     description="Get the language setting for agent MD files (en/zh/ru)",

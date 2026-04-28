@@ -37,6 +37,9 @@ class AgentMdManager:
         self.memory_dir: Path = self.working_dir / memory_dir_name
         self.memory_dir.mkdir(parents=True, exist_ok=True)
 
+        self.common_info_dir: Path = self.working_dir / "common_info"
+        self.common_info_dir.mkdir(parents=True, exist_ok=True)
+
     def list_working_mds(self) -> list[dict]:
         """List all markdown files with metadata in the working dir.
 
@@ -151,4 +154,47 @@ class AgentMdManager:
         if not md_name.endswith(".md"):
             md_name += ".md"
         file_path = self.memory_dir / md_name
+        file_path.write_text(content, encoding="utf-8")
+
+    def list_common_info_mds(self) -> list[dict]:
+        """List all markdown files with metadata in the common-info dir."""
+        md_files = list(self.common_info_dir.glob("*.md"))
+        md_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+
+        result = []
+        for f in md_files:
+            if f.is_file():
+                stat = f.stat()
+                result.append(
+                    {
+                        "filename": f.name,
+                        "size": stat.st_size,
+                        "path": str(f),
+                        "created_time": datetime.fromtimestamp(
+                            stat.st_ctime,
+                        ).isoformat(),
+                        "modified_time": datetime.fromtimestamp(
+                            stat.st_mtime,
+                        ).isoformat(),
+                    },
+                )
+        return result
+
+    def read_common_info_md(self, md_name: str) -> str:
+        """Read markdown file content from the common-info directory."""
+        if not md_name.endswith(".md"):
+            md_name += ".md"
+        file_path = self.common_info_dir / md_name
+        if not file_path.exists():
+            raise FileNotFoundError(
+                f"Common-info md file not found: {md_name}",
+            )
+
+        return read_text_file_with_encoding_fallback(file_path).strip()
+
+    def write_common_info_md(self, md_name: str, content: str):
+        """Write markdown content to a file in the common-info directory."""
+        if not md_name.endswith(".md"):
+            md_name += ".md"
+        file_path = self.common_info_dir / md_name
         file_path.write_text(content, encoding="utf-8")

@@ -114,3 +114,7 @@ def test_initialize_agent_workspace_adds_user_info_md_for_zh(
     user_info = tmp_path / "USER_INFO.md"
     assert user_info.exists()
     assert "user-info:auto:start" in user_info.read_text(encoding="utf-8")
+
+    common_info = tmp_path / "COMMON_INFO.md"
+    assert common_info.exists()
+    assert "common-info:auto:start" in common_info.read_text(encoding="utf-8")

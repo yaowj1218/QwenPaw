@@ -36,6 +36,9 @@ class TestAgentMdManagerInit:
     def test_memory_dir_is_subdirectory(self, manager, tmp_path):
         assert manager.memory_dir == tmp_path / "memory"
 
+    def test_common_info_dir_is_subdirectory(self, manager, tmp_path):
+        assert manager.common_info_dir == tmp_path / "common_info"
+
     def test_working_dir_created(self, tmp_path):
         """Constructor creates working_dir if not present."""
         from qwenpaw.agents.memory.agent_md_manager import (
@@ -55,6 +58,15 @@ class TestAgentMdManagerInit:
 
         _ = AgentMdManager(working_dir=tmp_path)
         assert (tmp_path / "memory").exists()
+
+    def test_common_info_dir_created(self, tmp_path):
+        """Constructor creates working_dir/common_info."""
+        from qwenpaw.agents.memory.agent_md_manager import (
+            AgentMdManager,
+        )
+
+        _ = AgentMdManager(working_dir=tmp_path)
+        assert (tmp_path / "common_info").exists()
 
     def test_accepts_string_path(self, tmp_path):
         """Constructor accepts a string path."""

@@ -14,7 +14,11 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import type { MarkdownFile, DailyMemoryFile } from "../../../../api/types";
+import type {
+  MarkdownFile,
+  DailyMemoryFile,
+  CommonInfoFile,
+} from "../../../../api/types";
 import { FileItem } from "./FileItem";
 import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
@@ -24,11 +28,14 @@ interface FileListPanelProps {
   selectedFile: MarkdownFile | null;
   dailyMemories: DailyMemoryFile[];
   expandedMemory: boolean;
+  commonInfoFiles: CommonInfoFile[];
+  expandedCommonInfo: boolean;
   workspacePath: string | null;
   enabledFiles: string[];
   onRefresh: () => void;
   onFileClick: (file: MarkdownFile) => void;
   onDailyMemoryClick: (daily: DailyMemoryFile) => void;
+  onCommonInfoClick: (commonInfo: CommonInfoFile) => void;
   onToggleEnabled: (filename: string) => void;
   onReorder: (newOrder: string[]) => void;
 }
@@ -38,10 +45,13 @@ export const FileListPanel: React.FC<FileListPanelProps> = ({
   selectedFile,
   dailyMemories,
   expandedMemory,
+  commonInfoFiles,
+  expandedCommonInfo,
   enabledFiles,
   onRefresh,
   onFileClick,
   onDailyMemoryClick,
+  onCommonInfoClick,
   onToggleEnabled,
   onReorder,
 }) => {
@@ -107,9 +117,12 @@ export const FileListPanel: React.FC<FileListPanelProps> = ({
                       selectedFile={selectedFile}
                       expandedMemory={expandedMemory}
                       dailyMemories={dailyMemories}
+                      expandedCommonInfo={expandedCommonInfo}
+                      commonInfoFiles={commonInfoFiles}
                       enabled={isEnabled}
                       onFileClick={onFileClick}
                       onDailyMemoryClick={onDailyMemoryClick}
+                      onCommonInfoClick={onCommonInfoClick}
                       onToggleEnabled={onToggleEnabled}
                     />
                   );

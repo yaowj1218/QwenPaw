@@ -1,7 +1,12 @@
 import { request } from "../request";
 import { getApiUrl } from "../config";
 import { buildAuthHeaders } from "../authHeaders";
-import type { MdFileInfo, MdFileContent, DailyMemoryFile } from "../types";
+import type {
+  MdFileInfo,
+  MdFileContent,
+  DailyMemoryFile,
+  CommonInfoFile,
+} from "../types";
 
 function getSelectedAgentId(): string {
   try {
@@ -134,6 +139,29 @@ export const workspaceApi = {
   saveDailyMemory: (date: string, content: string) =>
     request<Record<string, unknown>>(
       `/workspace/memory/${encodeURIComponent(date)}.md`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ content }),
+      },
+    ),
+
+  listCommonInfo: () =>
+    request<MdFileInfo[]>("/workspace/common-info").then(
+      (files) =>
+        files.map((file) => ({
+          ...file,
+          updated_at: new Date(file.modified_time).getTime(),
+        })) as CommonInfoFile[],
+    ),
+
+  loadCommonInfo: (fileName: string) =>
+    request<MdFileContent>(
+      `/workspace/common-info/${encodeURIComponent(fileName)}`,
+    ),
+
+  saveCommonInfo: (fileName: string, content: string) =>
+    request<Record<string, unknown>>(
+      `/workspace/common-info/${encodeURIComponent(fileName)}`,
       {
         method: "PUT",
         body: JSON.stringify({ content }),

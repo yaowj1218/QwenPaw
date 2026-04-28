@@ -19,3 +19,7 @@ export interface DailyMemoryFile extends MdFileInfo {
   date: string;
   updated_at: number;
 }
+
+export interface CommonInfoFile extends MdFileInfo {
+  updated_at: number;
+}
