@@ -46,8 +46,9 @@ export const FileItem: React.FC<FileItemProps> = ({
 }) => {
   const { t } = useTranslation();
   const isSelected = selectedFile?.filename === file.filename;
-  const isMemoryFile = file.filename === "MEMORY.md";
-  const isCommonInfoFile = file.filename === "COMMON_INFO.md";
+  const normalizedFilename = file.filename.toLowerCase();
+  const isMemoryFile = normalizedFilename === "memory.md";
+  const isCommonInfoFile = normalizedFilename === "common_info.md";
 
   const {
     attributes,

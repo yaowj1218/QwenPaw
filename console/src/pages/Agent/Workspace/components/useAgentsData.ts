@@ -17,7 +17,18 @@ const getParentDir = (filePath: string): string => {
 };
 
 const isCommonInfoPath = (filePath: string): boolean =>
-  /(^|[/\\])common_info[/\\]/.test(filePath);
+  /(^|[/\\])common_info[/\\]/i.test(filePath);
+
+const isCommonInfoIndexFile = (filename: string): boolean =>
+  filename.toLowerCase() === "common_info.md";
+
+const isMemoryIndexFile = (filename: string): boolean =>
+  filename.toLowerCase() === "memory.md";
+
+const getWorkspaceDirFromCommonInfoPath = (filePath: string): string => {
+  const commonInfoDir = getParentDir(filePath);
+  return getParentDir(commonInfoDir);
+};
 
 export const useAgentsData = () => {
   const { t } = useTranslation();
@@ -45,18 +56,24 @@ export const useAgentsData = () => {
       setOriginalContent("");
       setExpandedMemory(false);
       setExpandedCommonInfo(false);
+      setCommonInfoFiles([]);
 
       const enabled = await fetchEnabledFiles();
-      const fileList = await workspaceApi.listFiles();
-      const sortedFiles = sortFilesByEnabled(
+      const [fileList, commonInfoList] = await Promise.all([
+        workspaceApi.listFiles(),
+        api.listCommonInfo(),
+      ]);
+      setCommonInfoFiles(commonInfoList);
+      const displayFiles = withCommonInfoRoot(
         fileList as unknown as MarkdownFile[],
-        enabled,
+        commonInfoList,
       );
+      const sortedFiles = sortFilesByEnabled(displayFiles, enabled);
       setFiles(sortedFiles);
 
       // Set workspace path (handle both Unix '/' and Windows '\' separators)
-      if (fileList.length > 0) {
-        setWorkspacePath(getParentDir(fileList[0].path));
+      if (displayFiles.length > 0) {
+        setWorkspacePath(getParentDir(displayFiles[0].path));
       } else {
         setWorkspacePath("");
       }
@@ -131,21 +148,58 @@ export const useAgentsData = () => {
     });
   };
 
+  const withCommonInfoRoot = (
+    fileList: MarkdownFile[],
+    commonInfoList: CommonInfoFile[],
+  ) => {
+    if (
+      fileList.some((file) => isCommonInfoIndexFile(file.filename)) ||
+      commonInfoList.length === 0
+    ) {
+      return fileList;
+    }
+
+    const latestCommonInfo = [...commonInfoList].sort(
+      (a, b) => b.updated_at - a.updated_at,
+    )[0];
+    const workspaceDir = getWorkspaceDirFromCommonInfoPath(
+      latestCommonInfo.path,
+    );
+
+    return [
+      ...fileList,
+      {
+        filename: "COMMON_INFO.md",
+        path: `${workspaceDir}/COMMON_INFO.md`,
+        size: 0,
+        created_time: latestCommonInfo.created_time,
+        modified_time: latestCommonInfo.modified_time,
+        updated_at: latestCommonInfo.updated_at,
+        virtual: true,
+      },
+    ];
+  };
+
   const fetchFiles = async (latestEnabledFiles?: string[]) => {
     try {
       // Validate with Array.isArray: onClick handlers may pass a MouseEvent as the first argument
       const enabled = Array.isArray(latestEnabledFiles)
         ? latestEnabledFiles
         : await fetchEnabledFiles();
-      const fileList = await workspaceApi.listFiles();
-      const sortedFiles = sortFilesByEnabled(
+      const [fileList, commonInfoList] = await Promise.all([
+        workspaceApi.listFiles(),
+        api.listCommonInfo(),
+      ]);
+      setCommonInfoFiles(commonInfoList);
+      const displayFiles = withCommonInfoRoot(
         fileList as unknown as MarkdownFile[],
-        enabled,
+        commonInfoList,
       );
+      const sortedFiles = sortFilesByEnabled(displayFiles, enabled);
       setFiles(sortedFiles);
       // Set workspace path (handle both Unix '/' and Windows '\' separators)
-      if (fileList.length > 0) {
-        setWorkspacePath(getParentDir(fileList[0].path));
+      if (displayFiles.length > 0) {
+        setWorkspacePath(getParentDir(displayFiles[0].path));
       } else {
         setWorkspacePath("");
       }
@@ -176,8 +230,8 @@ export const useAgentsData = () => {
   };
 
   const handleFileClick = async (file: MarkdownFile) => {
-    if (file.filename === "MEMORY.md") {
-      if (expandedMemory && selectedFile?.filename === "MEMORY.md") {
+    if (isMemoryIndexFile(file.filename)) {
+      if (expandedMemory && isMemoryIndexFile(selectedFile?.filename ?? "")) {
         setExpandedMemory(false);
         return;
       } else {
@@ -186,13 +240,22 @@ export const useAgentsData = () => {
       }
     }
 
-    if (file.filename === "COMMON_INFO.md") {
-      if (expandedCommonInfo && selectedFile?.filename === "COMMON_INFO.md") {
+    if (isCommonInfoIndexFile(file.filename)) {
+      if (
+        expandedCommonInfo &&
+        isCommonInfoIndexFile(selectedFile?.filename ?? "")
+      ) {
         setExpandedCommonInfo(false);
         return;
       } else {
         setExpandedCommonInfo(true);
         fetchCommonInfoFiles();
+      }
+      if (file.virtual) {
+        setSelectedFile(file);
+        setFileContent("");
+        setOriginalContent("");
+        return;
       }
     }
 
@@ -291,7 +354,7 @@ export const useAgentsData = () => {
     const isEnabling = !enabledFiles.includes(filename);
 
     // Show warning for MEMORY.md
-    if (isEnabling && filename === "MEMORY.md") {
+    if (isEnabling && isMemoryIndexFile(filename)) {
       message.warning({
         content: t("workspace.memoryFileWarning"),
         duration: 5,

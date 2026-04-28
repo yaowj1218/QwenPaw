@@ -322,3 +322,52 @@ class TestAgentMdManagerWriteMemoryMd:
         (mem / "old.md").write_text("old data", encoding="utf-8")
         manager.write_memory_md("old.md", "new data")
         assert (mem / "old.md").read_text(encoding="utf-8") == "new data"
+
+
+# ---------------------------------------------------------------------------
+# TestAgentMdManagerCommonInfoMds
+# ---------------------------------------------------------------------------
+
+
+class TestAgentMdManagerCommonInfoMds:
+    """P1: common-info markdown behavior."""
+
+    def test_lists_common_info_markdown_case_insensitively(
+        self,
+        manager,
+        tmp_path,
+    ):
+        common_info = tmp_path / "common_info"
+        (common_info / "service.MD").write_text("info", encoding="utf-8")
+        (common_info / "ignore.txt").write_text("skip", encoding="utf-8")
+
+        result = manager.list_common_info_mds()
+
+        assert len(result) == 1
+        assert result[0]["filename"] == "service.MD"
+
+    def test_reads_common_info_file_case_insensitively(
+        self,
+        manager,
+        tmp_path,
+    ):
+        common_info = tmp_path / "common_info"
+        (common_info / "Service.md").write_text("info", encoding="utf-8")
+
+        result = manager.read_common_info_md("service.md")
+
+        assert result == "info"
+
+    def test_writes_common_info_file_preserving_existing_case(
+        self,
+        manager,
+        tmp_path,
+    ):
+        common_info = tmp_path / "common_info"
+        existing = common_info / "Service.md"
+        existing.write_text("old", encoding="utf-8")
+
+        manager.write_common_info_md("service.md", "new")
+
+        assert existing.read_text(encoding="utf-8") == "new"
+        assert [path.name for path in common_info.iterdir()] == ["Service.md"]

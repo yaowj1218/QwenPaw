@@ -13,6 +13,7 @@ export interface MdFileContent {
 export interface MarkdownFile extends MdFileInfo {
   updated_at: number;
   enabled?: boolean;
+  virtual?: boolean;
 }
 
 export interface DailyMemoryFile extends MdFileInfo {

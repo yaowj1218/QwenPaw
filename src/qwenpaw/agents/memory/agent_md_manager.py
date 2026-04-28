@@ -40,6 +40,32 @@ class AgentMdManager:
         self.common_info_dir: Path = self.working_dir / "common_info"
         self.common_info_dir.mkdir(parents=True, exist_ok=True)
 
+    @staticmethod
+    def _ensure_md_extension(md_name: str) -> str:
+        if not md_name.lower().endswith(".md"):
+            return f"{md_name}.md"
+        return md_name
+
+    @staticmethod
+    def _resolve_file_case_insensitive(directory: Path, filename: str) -> Path:
+        exact_path = directory / filename
+        if exact_path.exists():
+            return exact_path
+
+        normalized = filename.lower()
+        for child in directory.iterdir():
+            if child.is_file() and child.name.lower() == normalized:
+                return child
+        return exact_path
+
+    @staticmethod
+    def _list_markdown_files(directory: Path) -> list[Path]:
+        return [
+            child
+            for child in directory.iterdir()
+            if child.is_file() and child.suffix.lower() == ".md"
+        ]
+
     def list_working_mds(self) -> list[dict]:
         """List all markdown files with metadata in the working dir.
 
@@ -52,7 +78,7 @@ class AgentMdManager:
                 - created_time: file creation timestamp
                 - modified_time: file modification timestamp
         """
-        md_files = list(self.working_dir.glob("*.md"))
+        md_files = self._list_markdown_files(self.working_dir)
         # Sort by modification time descending (newest first)
         md_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
 
@@ -82,9 +108,11 @@ class AgentMdManager:
             str: The file content as string
         """
         # Auto-append .md extension if not present
-        if not md_name.endswith(".md"):
-            md_name += ".md"
-        file_path = self.working_dir / md_name
+        md_name = self._ensure_md_extension(md_name)
+        file_path = self._resolve_file_case_insensitive(
+            self.working_dir,
+            md_name,
+        )
         if not file_path.exists():
             raise FileNotFoundError(f"Working md file not found: {md_name}")
 
@@ -93,8 +121,7 @@ class AgentMdManager:
     def write_working_md(self, md_name: str, content: str):
         """Write markdown content to a file in the working directory."""
         # Auto-append .md extension if not present
-        if not md_name.endswith(".md"):
-            md_name += ".md"
+        md_name = self._ensure_md_extension(md_name)
         file_path = self.working_dir / md_name
         file_path.write_text(content, encoding="utf-8")
 
@@ -110,7 +137,7 @@ class AgentMdManager:
                 - created_time: file creation timestamp
                 - modified_time: file modification timestamp
         """
-        md_files = list(self.memory_dir.glob("*.md"))
+        md_files = self._list_markdown_files(self.memory_dir)
         # Sort by modification time descending (newest first)
         md_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
 
@@ -140,9 +167,11 @@ class AgentMdManager:
             str: The file content as string
         """
         # Auto-append .md extension if not present
-        if not md_name.endswith(".md"):
-            md_name += ".md"
-        file_path = self.memory_dir / md_name
+        md_name = self._ensure_md_extension(md_name)
+        file_path = self._resolve_file_case_insensitive(
+            self.memory_dir,
+            md_name,
+        )
         if not file_path.exists():
             raise FileNotFoundError(f"Memory md file not found: {md_name}")
 
@@ -151,14 +180,13 @@ class AgentMdManager:
     def write_memory_md(self, md_name: str, content: str):
         """Write markdown content to a file in the memory directory."""
         # Auto-append .md extension if not present
-        if not md_name.endswith(".md"):
-            md_name += ".md"
+        md_name = self._ensure_md_extension(md_name)
         file_path = self.memory_dir / md_name
         file_path.write_text(content, encoding="utf-8")
 
     def list_common_info_mds(self) -> list[dict]:
         """List all markdown files with metadata in the common-info dir."""
-        md_files = list(self.common_info_dir.glob("*.md"))
+        md_files = self._list_markdown_files(self.common_info_dir)
         md_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
 
         result = []
@@ -182,9 +210,11 @@ class AgentMdManager:
 
     def read_common_info_md(self, md_name: str) -> str:
         """Read markdown file content from the common-info directory."""
-        if not md_name.endswith(".md"):
-            md_name += ".md"
-        file_path = self.common_info_dir / md_name
+        md_name = self._ensure_md_extension(md_name)
+        file_path = self._resolve_file_case_insensitive(
+            self.common_info_dir,
+            md_name,
+        )
         if not file_path.exists():
             raise FileNotFoundError(
                 f"Common-info md file not found: {md_name}",
@@ -194,7 +224,9 @@ class AgentMdManager:
 
     def write_common_info_md(self, md_name: str, content: str):
         """Write markdown content to a file in the common-info directory."""
-        if not md_name.endswith(".md"):
-            md_name += ".md"
-        file_path = self.common_info_dir / md_name
+        md_name = self._ensure_md_extension(md_name)
+        file_path = self._resolve_file_case_insensitive(
+            self.common_info_dir,
+            md_name,
+        )
         file_path.write_text(content, encoding="utf-8")
