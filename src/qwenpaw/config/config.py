@@ -32,6 +32,7 @@ from ..constant import (
     LLM_RATE_LIMIT_PAUSE,
     WORKING_DIR,
 )
+from ..agents.prompt_defaults import DEFAULT_SYSTEM_PROMPT_FILES
 
 
 # ============================================================================
@@ -988,7 +989,7 @@ class AgentProfileConfig(BaseModel):
         ),
     )
     system_prompt_files: List[str] = Field(
-        default_factory=lambda: ["AGENTS.md", "SOUL.md", "PROFILE.md"],
+        default_factory=lambda: list(DEFAULT_SYSTEM_PROMPT_FILES),
         description="System prompt markdown files",
     )
     tools: Optional["ToolsConfig"] = Field(
@@ -1042,7 +1043,7 @@ class AgentsConfig(BaseModel):
     language: str = Field(default="zh")
     installed_md_files_language: Optional[str] = None
     system_prompt_files: List[str] = Field(
-        default_factory=lambda: ["AGENTS.md", "SOUL.md", "PROFILE.md"],
+        default_factory=lambda: list(DEFAULT_SYSTEM_PROMPT_FILES),
     )
     audio_mode: Literal["auto", "native"] = Field(
         default="auto",
@@ -1619,7 +1620,7 @@ def build_fallback_agent_profile_config(
             config.agents.system_prompt_files
             if hasattr(config.agents, "system_prompt_files")
             and config.agents.system_prompt_files
-            else ["AGENTS.md", "SOUL.md", "PROFILE.md"]
+            else list(DEFAULT_SYSTEM_PROMPT_FILES)
         ),
         acp=(config.acp if hasattr(config, "acp") and config.acp else None),
     )
@@ -1805,7 +1806,7 @@ def migrate_legacy_config_to_multi_agent() -> bool:
         system_prompt_files=(
             legacy_agents.system_prompt_files
             if legacy_agents.system_prompt_files
-            else ["AGENTS.md", "SOUL.md", "PROFILE.md"]
+            else list(DEFAULT_SYSTEM_PROMPT_FILES)
         ),
         tools=config.tools if config.tools else None,
         security=config.security if config.security else None,
@@ -1840,8 +1841,14 @@ def migrate_legacy_config_to_multi_agent() -> bool:
                     shutil.copy2(old_path, new_path)
                 print(f"  Migrated {item_name} to default workspace")
 
-    # Copy markdown files (AGENTS.md, SOUL.md, PROFILE.md)
-    for md_file in ["AGENTS.md", "SOUL.md", "PROFILE.md"]:
+    # Copy workspace markdown files, including user/common info if present.
+    for md_file in [
+        "AGENTS.md",
+        "SOUL.md",
+        "PROFILE.md",
+        "USER_INFO.md",
+        "COMMON_INFO.md",
+    ]:
         old_md = old_workspace / md_file
         if old_md.exists():
             new_md = default_workspace / md_file

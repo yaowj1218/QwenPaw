@@ -13,6 +13,7 @@ from ..agents.templates import (
     QA_AGENT_TEMPLATE,
     build_agent_template,
 )
+from ..agents.prompt_defaults import DEFAULT_SYSTEM_PROMPT_FILES
 from ..config.config import (
     AgentProfileConfig,
     AgentProfileRef,
@@ -149,7 +150,7 @@ def _do_migrate_legacy_workspace() -> bool:
             legacy_agents.system_prompt_files
             if hasattr(legacy_agents, "system_prompt_files")
             and legacy_agents.system_prompt_files
-            else ["AGENTS.md", "SOUL.md", "PROFILE.md"]
+            else list(DEFAULT_SYSTEM_PROMPT_FILES)
         ),
         tools=config.tools if hasattr(config, "tools") else None,
         security=config.security if hasattr(config, "security") else None,

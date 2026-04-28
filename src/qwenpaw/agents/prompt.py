@@ -14,6 +14,10 @@ from agentscope_runtime.engine.schemas.exception import (
 )
 
 from .memory.base_memory_manager import BaseMemoryManager
+from .prompt_defaults import (
+    DEFAULT_SYSTEM_PROMPT_FILES,
+    get_common_info_guidance,
+)
 from .utils.file_handling import read_text_file_with_encoding_fallback
 
 logger = logging.getLogger(__name__)
@@ -32,11 +36,7 @@ class PromptConfig:
 
     # Default files to load when no config is provided
     # All files are optional - if they don't exist, they'll be skipped
-    DEFAULT_FILES = [
-        "AGENTS.md",
-        "SOUL.md",
-        "PROFILE.md",
-    ]
+    DEFAULT_FILES = DEFAULT_SYSTEM_PROMPT_FILES
 
 
 class PromptBuilder:
@@ -208,6 +208,9 @@ class PromptBuilder:
             if self.enabled_files is None
             else self.enabled_files
         )
+        files_to_load = list(files_to_load)
+        if "USER_INFO.md" not in files_to_load:
+            files_to_load.append("USER_INFO.md")
 
         # Load all files (all are optional)
         for filename in files_to_load:
@@ -219,6 +222,9 @@ class PromptBuilder:
 
         # Join all parts with double newlines
         final_prompt = "\n\n".join(self.prompt_parts)
+        final_prompt = (
+            final_prompt + "\n\n" + get_common_info_guidance(self.language)
+        )
 
         logger.debug(
             "System prompt built from %d file(s), total length: %d chars",
